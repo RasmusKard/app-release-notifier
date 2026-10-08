@@ -15,8 +15,9 @@ export interface StateEvent {
   what: string;
 }
 
-const PLATFORM: Record<string, string> = { ios: 'iOS', android: 'Android' };
-export const platformName = (p: string | undefined) => (p ? PLATFORM[p.toLowerCase()] ?? p : 'iOS');
+// EAS sends ios/android, App Store Connect IOS, MAC_OS, TV_OS, VISION_OS.
+const PLATFORM: Record<string, string> = { ios: 'iOS', mac_os: 'macOS', tv_os: 'tvOS', vision_os: 'visionOS', android: 'Android' };
+export const platformName = (p: string) => PLATFORM[p.toLowerCase()] ?? p;
 
 /** GET/POST returning parsed JSON; throws with the status and the start of the body on non-2xx. */
 export async function fetchJson(what: string, url: string, init: RequestInit = {}, timeoutMs = 10_000): Promise<any> {
