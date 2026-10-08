@@ -1,0 +1,19 @@
+{
+  "name": "app-release-notifier",
+  "description": "Post Expo release events from EAS, App Store Connect and Google Play to Slack, Discord and Teams",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test 'test/*.test.ts'",
+    "check": "tsc",
+    "start": "node src/main.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "typescript": "^7.0.2"
+  }
+}
