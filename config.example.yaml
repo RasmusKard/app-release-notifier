@@ -1,55 +1,43 @@
-# Copy to config.yaml. "${VAR}" is replaced with the environment variable VAR (startup fails if it's unset).
-# Always quote it: inside { ... } an unquoted ${VAR} is a YAML syntax error.
+# Copy to config.yaml. Every key is documented at https://rasmuskard.github.io/app-release-notifier/interfaces/ConfigFile.html
 port: 8080
-# stateStore: ./state-store.mjs # optional: where the Play poller keeps state. In memory when unset. See README
+# stateStore: ./state-store.mjs
 
 apps:
-  myapp: # id: used in webhook URLs (/eas/myapp, /asc/myapp) and as the `app` label in routes
+  myapp:
     name: My App
     eas:
-      secret: "${EAS_WEBHOOK_SECRET}" # eas webhook:create --secret (16+ chars)
+      secret: "${EAS_WEBHOOK_SECRET}"
     asc:
-      secret: "${ASC_WEBHOOK_SECRET}" # the secret you set when creating the App Store Connect webhook
+      secret: "${ASC_WEBHOOK_SECRET}"
     play:
       packageName: com.acme.myapp
-      tracks: [internal, production] # PUBLISHED on production = release.live, on other tracks = testing.build.available
+      tracks: [internal, production]
 
-# Optional (delete if unused). Adds version numbers to App Store Connect messages.
-# Key: App Store Connect > Users and Access > Integrations > Team keys (Developer role is enough).
-# Relative paths are resolved from this file's folder.
 ascApi:
   issuerId: "${ASC_ISSUER_ID}"
   keyId: "${ASC_KEY_ID}"
-  privateKey: ./secrets/AuthKey.p8 # path, or the PEM itself
+  privateKey: ./secrets/AuthKey.p8
 
-# Required for Google Play: there are no Play webhooks for releases, so we poll.
 playApi:
-  serviceAccount: ./secrets/play-service-account.json # path, or the JSON itself
+  serviceAccount: ./secrets/play-service-account.json
   intervalMinutes: 15
 
-# Optional. Lets CI (e.g. an EAS Workflow step) post custom events like update.published. See README.
 ingest:
-  secret: "${INGEST_SECRET}" # whsec_<base64>
+  secret: "${INGEST_SECRET}"
 
 targets:
   - id: releases
     type: slack
     url: "${SLACK_RELEASES_WEBHOOK}"
-    mention: "<!subteam^S0123ABC>" # used by routes with mention: true. Also: "<!here>", "<@U0123>"
+    mention: "<!subteam^S0123ABC>"
   - id: dev-discord
     type: discord
     url: "${DISCORD_WEBHOOK}"
-    # optional: threadId, mention: "<@&roleId>". Name and avatar are set on the webhook in Discord
   - id: teams
     type: teams
-    url: "${TEAMS_WORKFLOW_URL}" # Teams Workflows "Send webhook alerts to a channel" template
-    mention: { id: "release-crew@acme.com", name: "Release crew" } # Entra object id or UPN
+    url: "${TEAMS_WORKFLOW_URL}"
+    mention: { id: "release-crew@acme.com", name: "Release crew" }
 
-# Every matching route fires; a target hit by several routes gets one message.
-# types: exact names or a trailing * ("appreview.*", "*"). labels: exact match on app, platform, profile, track.
-# minSeverity: drops events below it (info < success < warning < error). Default: info.
-# Events: build.succeeded/failed/canceled, submit.succeeded/failed/canceled, build.processing_failed,
-#   testing.build.available, appreview.submitted/in_review/approved/rejected/withdrawn, release.live, update.published
 routes:
   - types: ["build.failed", "submit.failed", "build.processing_failed", "appreview.rejected"]
     targets: [releases, teams]
@@ -61,4 +49,4 @@ routes:
     targets: [releases]
   - types: ["*"]
     targets: [dev-discord]
-    silent: true # Discord only: no push notification
+    silent: true

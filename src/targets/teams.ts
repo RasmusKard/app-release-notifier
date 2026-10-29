@@ -1,9 +1,27 @@
-import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, linksOf, postJson, truncate } from './shared.ts';
+import type { ConfigFile } from '../config.ts';
+import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, postJson, truncate } from './shared.ts';
 
-interface TeamsConfig {
+/**
+ * A target in {@link ConfigFile.targets} that posts to a Teams channel through a Workflows webhook. Teams accepts a
+ * post before delivering it, so a failure shows only in the flow's run history. It drops posts beyond roughly 25 in 5
+ * minutes.
+ */
+export interface TeamsTarget {
+  /** The id routes refer to it by. */
+  id: string;
+  type: 'teams';
+  /** The webhook URL of a Teams Workflows flow made from the "Send webhook alerts to a channel" template. */
   url: string;
-  mention?: { id: string; name: string }; // id: Entra object id or UPN
+  /** Who routes with `mention` ping, such as `{ id: "release-crew@acme.com", name: "Release crew" }`. */
+  mention?: {
+    /** An Entra object id or UPN. */
+    id: string;
+    /** The name the mention shows. */
+    name: string;
+  };
 }
+
+type TeamsConfig = Pick<TeamsTarget, 'url' | 'mention'>;
 
 const STYLE = { info: 'accent', success: 'good', warning: 'warning', error: 'attention' } as const;
 // DATE()/TIME() render raw unless given strict RFC 3339 (no milliseconds). The router already normalized time to ISO.
@@ -12,7 +30,7 @@ const rfc3339 = (iso = '') => iso.replace(/\.\d{3}Z$/, 'Z');
 const rich = (text: string, style: Record<string, unknown> = {}) => ({ type: 'RichTextBlock', inlines: [{ type: 'TextRun', text, ...style }] });
 
 export const teams: Target<TeamsConfig> = {
-  keys: ['url', 'mention'],
+  keys: keysOf<Omit<TeamsTarget, 'id' | 'type'>>({ url: true, mention: true }),
   parseConfig(raw) {
     const url = httpUrl(raw, 'url');
     if (/\.(logic\.azure|webhook\.office)\.com$/.test(url.hostname)) // hostname: lower-cased, no :443
