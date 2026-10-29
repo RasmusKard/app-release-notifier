@@ -9,7 +9,7 @@
     "test": "node --test 'test/*.test.ts'",
     "check": "tsc && npm run gen:defaults -- --check && npm run docs:check",
     "start": "node src/main.ts",
-    "gen:defaults": "tsdoc-defaults 'src/**/*.ts' --import-ext .ts",
+    "gen:defaults": "tsdoc-defaults",
     "docs": "typedoc",
     "docs:check": "typedoc --out build/docs && (git diff --no-index --exit-code build/docs docs || (echo 'docs is stale: run npm run docs' && exit 1))"
   },
