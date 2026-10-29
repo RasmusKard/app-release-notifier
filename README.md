@@ -147,3 +147,6 @@ To use Redis, a database or another remote store instead, export the same `get` 
 - Google Play rejection reasons aren't in its API. They arrive by email.
 - If every target was down when an App Store Connect event arrived, resend it by hand from the webhook's delivery list in App Store Connect.
 
+## License
+
+MIT
