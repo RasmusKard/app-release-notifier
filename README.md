@@ -14,7 +14,7 @@ routes:
     silent: true
 ```
 
-[`config.example.yaml`](config.example.yaml) lists every event type and option.
+The [config reference](https://rasmuskard.github.io/app-release-notifier/interfaces/ConfigFile.html) lists every option and event type. [`config.example.yaml`](config.example.yaml) is a starting point.
 
 When a target is down:
 
@@ -69,11 +69,11 @@ eas webhook:create --event SUBMIT --url https://your.host/eas/myapp --secret "$E
 - Secret: the one in `config.yaml`.
 - Events: *App Store version state changes* and *Build upload state changes*.
 
-Add `ascApi` to the config to get version numbers in messages.
+Add [`ascApi`](https://rasmuskard.github.io/app-release-notifier/interfaces/ConfigAscApi.html) to the config to get version numbers in messages.
 
 ### Google Play
 
-Play has no release webhooks, so the server polls it every `intervalMinutes`. The first poll only records the current state. Messages start with the next change.
+The server polls Play every [`playApi.intervalMinutes`](https://rasmuskard.github.io/app-release-notifier/interfaces/ConfigPlayApi.html). The first poll only records the current state. Messages start with the next change.
 
 - In a Google Cloud project, enable the *Google Play Android Developer API*.
 - Create a service account in that project and download its JSON key.
@@ -85,7 +85,7 @@ Play has no release webhooks, so the server polls it every `intervalMinutes`. Th
 
 - Set `ingest.secret` in the config. Generate one with `node -e 'console.log("whsec_"+require("crypto").randomBytes(32).toString("base64"))'`.
 - Sign each request with [Standard Webhooks](https://www.standardwebhooks.com/). Its libraries do this, or see the example below.
-- The JSON body needs `type` (like `update.published`) and `title`. Optional: `severity`, `body`, `actor`, `source`, `time`, `fields`, `links`, and `labels` such as `{ "app": "myapp" }` for routes to match on.
+- The JSON body is an [`IngestEvent`](https://rasmuskard.github.io/app-release-notifier/interfaces/IngestEvent.html).
 - Resend on a 503.
 
 <details>
@@ -110,15 +110,11 @@ if (!res.ok) throw new Error(`ingest: ${res.status} ${await res.text()}`);
 
 ## Targets
 
-| Type | URL from | Notes |
-| --- | --- | --- |
-| `slack` | Slack app › Incoming Webhooks | The bot name and icon come from the Slack app. |
-| `discord` | Channel › Integrations › Webhooks | `silent` routes suppress push notifications. `threadId` posts into a thread or forum post. |
-| `teams` | Teams Workflows › "Send webhook alerts to a channel" | Teams accepts posts before delivering them, so failures only show in the flow's run history. Limit is roughly 25 posts per 5 minutes. |
+[`slack`](https://rasmuskard.github.io/app-release-notifier/interfaces/SlackTarget.html), [`discord`](https://rasmuskard.github.io/app-release-notifier/interfaces/DiscordTarget.html) and [`teams`](https://rasmuskard.github.io/app-release-notifier/interfaces/TeamsTarget.html), each with its options and where its webhook URL comes from.
 
 ## State
 
-The Google Play poller remembers which release states it has seen. By default it keeps them in memory. To keep them across restarts, point `stateStore` in the config at a module that exports `get(key)` and `set(key, value)`, both with string values. `get` returns `undefined` when nothing is stored and throws on errors, which skips that poll.
+The Google Play poller remembers which release states it has seen. By default it keeps them in memory. To keep them across restarts, point [`stateStore`](https://rasmuskard.github.io/app-release-notifier/interfaces/ConfigFile.html#statestore) in the config at a module like this one.
 
 <details>
 <summary>A file on disk</summary>

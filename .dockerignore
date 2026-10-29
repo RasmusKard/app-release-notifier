@@ -4,3 +4,6 @@ config.yaml
 .env
 secrets
 .git
+docs
+vendor
+build
