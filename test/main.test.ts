@@ -1,13 +1,14 @@
 // End to end: start the real server with a config pointing a Slack target at a local fake, then post signed webhooks.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { connect, createServer as createNetServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { promisify } from 'node:util';
 
 const freePort = () => new Promise<number>((resolve) => {
   const s = createNetServer().listen(0, () => {
@@ -71,10 +72,12 @@ routes:
   assert.equal(await post('/asc/myapp', ping, { 'x-apple-signature': 'hmacsha256=' + createHmac('sha256', 'asc-secret').update(ping).digest('hex') }), 200);
   assert.equal(posts.length, 1);
 
-  // Signed like README.md's post-event.mjs example (Standard Webhooks).
+  // The post-event.mjs example from README.md, verbatim. Async: a sync spawn would block the fake Slack above.
+  const example = readFileSync('README.md', 'utf8').match(/```js\n(\/\/ post-event\.mjs:[\s\S]*?)```/)![1];
+  writeFileSync(join(dir, 'post-event.mjs'), example);
   const update = JSON.stringify({ type: 'update.published', title: 'OTA update published' });
-  const ts = String(Math.floor(Date.now() / 1000));
-  const sig = createHmac('sha256', ingestKey).update(`msg_1.${ts}.${update}`).digest('base64');
-  assert.equal(await post('/ingest', update, { 'webhook-id': 'msg_1', 'webhook-timestamp': ts, 'webhook-signature': `v1,${sig}` }), 200);
+  await promisify(execFile)(process.execPath, [join(dir, 'post-event.mjs'), update], {
+    env: { ...process.env, INGEST_URL: `http://127.0.0.1:${port}/ingest`, INGEST_SECRET: `whsec_${ingestKey.toString('base64')}` },
+  });
   assert.match(posts[1].text, /OTA update published/);
 });
