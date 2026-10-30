@@ -9,7 +9,7 @@
   "disableSources": true,
   "excludeExternals": true,
   "treatWarningsAsErrors": true,
-  "validation": { "notExported": false },
+  "validation": { "notExported": false, "notDocumented": true },
   "useFirstParagraphOfCommentAsSummary": true,
   "searchInComments": true,
   "includeHierarchySummary": false,

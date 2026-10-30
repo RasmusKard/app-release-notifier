@@ -40,8 +40,9 @@ export interface ConfigFile {
    */
   apps: Record<string, ConfigApp>;
   /**
-   * Adds the version number, the platform and a link to the app to App Store Connect messages. If the lookup fails,
-   * the message is sent without them.
+   * Adds the version number and the platform to App Store Connect messages, and a link to the app to App Review and
+   * release messages. Without it, or when the lookup fails, the message is sent without them and says iOS, with the
+   * `platform: ios` label, whatever the app's platform.
    */
   ascApi?: ConfigAscApi;
   /** The Google Play API credentials for every {@link ConfigApp.play}. */
@@ -141,7 +142,8 @@ export interface ConfigRoute {
    */
   types: string[];
   /**
-   * Labels the event must have, matched exactly: `app` (the app id), `platform` (`ios`, `macos`, `tvos`, `visionos` or `android`), `profile` (the
+   * Labels the event must have, matched exactly: `app` (the app id), `platform` (`ios`, `macos`, `tvos`, `visionos` or `android`; App Store Connect events need
+   * {@link ConfigFile.ascApi} for any but `ios`), `profile` (the
    * EAS build profile), `track` (the Google Play track), or those of an {@link IngestEvent}.
    */
   labels?: Record<string, string>;

@@ -1,38 +1,52 @@
 // https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md
 import { createHmac } from 'node:crypto';
+import type { ConfigFile, ConfigRoute } from '../config.ts';
 import { SEVERITIES, type Message, type Severity } from '../message.ts';
 import { DEFAULTS } from './ingest.defaults.ts';
 import { safeEq } from './shared.ts';
 
 /**
  * The JSON body of a `POST /ingest`, signed with Standard Webhooks. A missing or bad signature, or a timestamp more than
- * 5 minutes off, gets a 401. An invalid body gets a 400 with the reason. Unknown keys are ignored.
+ * 5 minutes off, gets a 401. An invalid body gets a 400 with the reason, and one over 1 MB a 413. Unknown keys are
+ * ignored. Without {@link ConfigFile.ingest}, `/ingest` answers 404.
+ *
+ * Each target cuts text longer than it shows, ending it with `…`.
  */
 export interface IngestEvent {
   /** The type routes match on: lowercase words joined by dots, such as `update.published`. Up to 100 characters. */
   type: string;
-  /** Up to 500 characters. */
+  /** The headline. Up to 500 characters; Slack and Teams show the first 300, Discord about 250. */
   title: string;
-  /** @default `'info'` */
+  /**
+   * Sets the message's emoji and colour, and is what {@link ConfigRoute.minSeverity} compares.
+   * @default `'info'`
+   */
   severity?: Severity;
   /** When it happened, as an ISO 8601 date. When unset, the time it was received. */
   time?: string;
   /** Plain text, may be multi-line. Up to 4000 characters; Slack shows the first 3000, Discord 2000 and Teams 1000. */
   body?: string;
-  /** Who triggered it. Up to 4000 characters. */
+  /** Who triggered it. Up to 4000 characters; Slack and Teams show the first 100, Discord 256. */
   actor?: string;
   /**
-   * Where it came from, shown in the message. Up to 4000 characters.
+   * Where it came from, shown in the message. Up to 4000 characters; every target shows the first 100.
    * @default `'CI'`
    */
   source?: string;
-  /** Up to 20, with labels up to 200 and values up to 3000 characters. Slack and Discord show the first 10, Teams the first 6. */
-  fields?: { label: string; value: string }[];
-  /**
-   * Up to 10 http(s) links, with labels up to 200 characters. The first one also makes the title a link. Slack and
-   * Discord show the first 5, Teams the first 6. Discord drops URLs over 512 characters, Teams over 2048.
-   */
-  links?: { label: string; url: string }[];
+  /** Up to 20. Slack and Discord show the first 10, Teams the first 6. */
+  fields?: {
+    /** Up to 200 characters; Slack shows the first 100, Discord and Teams 64. */
+    label: string;
+    /** Up to 3000 characters; Slack shows the first 1800, Discord 256 and Teams 200. */
+    value: string;
+  }[];
+  /** Up to 10. The first one also makes the title a link. Slack and Discord show the first 5, Teams the first 6. */
+  links?: {
+    /** Up to 200 characters; Slack shows the first 75, Discord 80 and Teams 40. */
+    label: string;
+    /** An http(s) URL, up to 3000 characters. Discord drops links with URLs over 512 characters, Teams over 2048. */
+    url: string;
+  }[];
   /** Labels routes match on, such as `{ "app": "myapp" }`. Never shown. Values up to 200 characters. */
   labels?: Record<string, string>;
 }

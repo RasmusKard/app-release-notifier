@@ -5,6 +5,7 @@ import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, optS
 export interface SlackTarget {
   /** The id routes refer to it by. */
   id: string;
+  /** Makes this a Slack target. */
   type: 'slack';
   /** The webhook URL, from the Slack app's Incoming Webhooks page. */
   url: string;
