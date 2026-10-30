@@ -1,6 +1,6 @@
 name: Release
 
-# Merging release-please's PR tags the version, creates the GitHub release and pushes the image to GHCR.
+# Merging release-please's PR tags the version, creates the GitHub release, pushes the image to GHCR and publishes the docs.
 on:
   push:
     branches: [main]
@@ -72,3 +72,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  pages:
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+    with:
+      ref: ${{ needs.release-please.outputs.tag }}

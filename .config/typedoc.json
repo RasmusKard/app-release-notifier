@@ -1,7 +1,7 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["../src/api.ts"],
-  "out": "../docs",
+  "out": "../build/docs",
   "plugin": ["tsdoc-defaults/typedoc", "../.github/scripts/typedoc-plugin.mts"],
   "customCss": "typedoc.css",
   "readme": "../README.md",
