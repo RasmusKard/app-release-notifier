@@ -1,11 +1,13 @@
 {
   "name": "storeherald",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Post Expo release events from EAS, App Store Connect and Google Play to Slack, Discord and Teams",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "node --test 'test/*.test.ts'",
     "check": "tsc && npm run gen:defaults -- --check && npm run docs:check",
