@@ -24,33 +24,58 @@ When a target is down:
 
 ## Install
 
+Run the Docker image, `ghcr.io/rasmuskard/storeherald`, for `linux/amd64` and `linux/arm64`. It's tagged with each release's version (`1.2.3`, `1.2`, `1`) and `latest`.
+
+Or run from source, with Node 24 or later. It runs the TypeScript directly, with no build step:
+
 ```sh
 git clone https://github.com/RasmusKard/storeherald.git
 cd storeherald
 npm ci
 ```
 
-_Node 24 or later. Runs the TypeScript directly, with no build step._
-
 ## Usage
 
-1. Copy the config and fill in your apps, targets and routes. Remove the sources you don't use: every `${VAR}` must be set and every key file must exist.
+1. Write the config: your apps, targets and routes. Start from [`config.example.yaml`](config.example.yaml) and remove the sources you don't use: every `${VAR}` must be set and every key file must exist.
+2. Put the variables the config references in `.env`, then start the server.
 
-   ```sh
-   cp config.example.yaml config.yaml
+   With Docker Compose, the config can live in `compose.yml`:
+
+   ```yaml
+   services:
+     storeherald:
+       image: ghcr.io/rasmuskard/storeherald
+       ports: ["8080:8080"]
+       env_file: .env
+       configs:
+         - source: storeherald
+           target: /config/config.yaml
+
+   configs:
+     storeherald:
+       content: |
+         apps:
+           myapp:
+             name: My App
+             eas: { secret: "$${EAS_WEBHOOK_SECRET}" }
+         targets:
+           - { id: releases, type: slack, url: "$${SLACK_RELEASES_WEBHOOK}" }
+         routes:
+           - { types: ["*"], targets: [releases] }
    ```
 
-2. Put the variables `config.yaml` references in `.env`, then start the server:
+   Compose replaces `${VAR}` in `content` itself, so write `$${VAR}` there. The server then reads the value from its environment, and `compose.yml` holds no secrets. Key files can be more `configs`, or the key itself can go in a variable.
+
+   Or with `docker run`, mounting the folder that holds `config.yaml` and its key files at `/config`:
+
+   ```sh
+   docker run --env-file .env -p 8080:8080 -v "$PWD:/config:ro" ghcr.io/rasmuskard/storeherald
+   ```
+
+   Or from source:
 
    ```sh
    node --env-file=.env src/main.ts config.yaml
-   ```
-
-   Or with Docker, mounting the folder that holds `config.yaml` and its key files at `/config`:
-
-   ```sh
-   docker build -t storeherald .
-   docker run --env-file .env -p 8080:8080 -v "$PWD:/config:ro" storeherald
    ```
 
 3. [Connect the sources](#sources).
