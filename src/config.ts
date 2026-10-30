@@ -13,11 +13,14 @@ import { DEFAULTS } from './config.defaults.ts';
 const TARGET_TYPES: Record<string, Target<any>> = { slack, discord, teams };
 
 /**
- * The config file: YAML, read at startup. An unknown key fails startup.
+ * The config file: YAML, read at startup from the path given as the server's argument (`config.yaml` when none is),
+ * or from the `STOREHERALD_CONFIG` environment variable when it's set, for hosts that can't mount a file. An unknown key
+ * fails startup.
  *
  * `"${VAR}"` in a string value is replaced with the environment variable `VAR`, and startup fails when it's unset.
  * Quote it: inside `{ ... }` an unquoted `${VAR}` is a YAML syntax error. Numbers and booleans may be strings, so they
- * can come from `"${VAR}"` too. Relative paths resolve against the config file's folder.
+ * can come from `"${VAR}"` too. Relative paths resolve against the config file's folder, or
+ * the working directory for `STOREHERALD_CONFIG`.
  */
 export interface ConfigFile {
   /**
@@ -347,4 +350,7 @@ export function parseConfig(raw: unknown, baseDir = '.'): Config {
   };
 }
 
-export const loadConfig = (path: string) => parseConfig(interpolate(parse(readFileSync(path, 'utf8')), process.env), dirname(path));
+export function loadConfig(path: string, env: Record<string, string | undefined> = process.env): Config {
+  const inline = env.STOREHERALD_CONFIG;
+  return parseConfig(interpolate(parse(inline || readFileSync(path, 'utf8')), env), inline ? '.' : dirname(path));
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { parse } from 'yaml';
-import { interpolate, parseConfig, type TargetInstance } from '../src/config.ts';
+import { interpolate, loadConfig, parseConfig, type TargetInstance } from '../src/config.ts';
 import type { Message } from '../src/message.ts';
 import { createRouter, plan } from '../src/router.ts';
 
@@ -35,6 +35,12 @@ void test('config: config.example.yaml parses', () => {
     TEAMS_WORKFLOW_URL: 'https://x.environment.api.powerplatform.com/y',
   };
   assert.equal(parseConfig(interpolate(raw, env)).routes.length, 4);
+});
+
+void test('config: STOREHERALD_CONFIG is used instead of the file', () => {
+  const yaml = 'apps: {}\ntargets: [{ id: a, type: slack, url: "${SLACK}" }]\nroutes: [{ types: ["*"], targets: [a] }]\n';
+  const cfg = loadConfig('missing.yaml', { STOREHERALD_CONFIG: yaml, SLACK: 'https://hooks.slack.com/services/x' });
+  assert.deepEqual([...cfg.targets.keys()], ['a']);
 });
 
 void test('config: errors never echo secrets', () => {

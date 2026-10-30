@@ -78,6 +78,8 @@ npm ci
    node --env-file=.env src/main.ts config.yaml
    ```
 
+   On a host that can't mount a file, put the YAML in the `STOREHERALD_CONFIG` environment variable instead.
+
 3. [Connect the sources](#sources).
 4. Logs are JSON lines on stdout. Alert on those with `"level":"error"` and point your uptime check at `GET /health_check`.
 
