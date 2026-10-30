@@ -1,5 +1,6 @@
 {
   "name": "storeherald",
+  "version": "0.0.0",
   "description": "Post Expo release events from EAS, App Store Connect and Google Play to Slack, Discord and Teams",
   "license": "MIT",
   "private": true,
