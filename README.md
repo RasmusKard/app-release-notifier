@@ -16,15 +16,16 @@ routes:
 
 The [config reference](https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html) lists every option and event type. [`config.example.yaml`](config.example.yaml) is a starting point.
 
-When a target is down:
+When a target fails:
 
-- If no target got the event, the server replies 503. EAS resends it a few times, an `/ingest` caller should resend it, and App Store Connect needs a resend by hand (see [Limits](#limits)). The Google Play poller retries on its next poll.
+- If it's down (no reply, a timeout, a 429 or a 5xx) and no target got the event, the server replies 503. EAS resends it a few times, an `/ingest` caller should resend it, and App Store Connect needs a resend by hand (see [Limits](#limits)). The Google Play poller retries on its next poll.
 - If another target got it, the sender isn't asked to resend. The failure is logged at `error` level.
+- If it rejects the post with any other 4xx, such as for a deleted webhook, the sender isn't asked to resend either. The failure is logged at `error` level.
 - A message can occasionally be posted twice: a post that timed out is retried even if it landed, and a resent event repeats its messages that did get through.
 
 ## Install
 
-Run the Docker image, `ghcr.io/rasmuskard/storeherald`, for `linux/amd64` and `linux/arm64`. It's tagged with each release's version (`1.2.3`, `1.2`, `1`) and `latest`.
+Run the Docker image, `ghcr.io/rasmuskard/storeherald`, for `linux/amd64` and `linux/arm64`. It's tagged with each release's version (`1.2.3`, `1.2`, `1`) and `latest`. [`CHANGELOG.md`](CHANGELOG.md) lists each release's changes.
 
 Or run from source, with Node 24 or later. It runs the TypeScript directly, with no build step:
 
@@ -39,7 +40,7 @@ npm ci
 1. Write the config: your apps, targets and routes. Start from [`config.example.yaml`](config.example.yaml) and remove the sources you don't use: every `${VAR}` must be set and every key file must exist.
 2. Put the variables the config references in `.env`, then start the server.
 
-   With Docker Compose, the config can live in `compose.yml`:
+   With Docker Compose 2.23.1 or later, the config can live in `compose.yml`:
 
    ```yaml
    services:
@@ -176,4 +177,4 @@ To use Redis, a database or another remote store instead, export the same `get` 
 
 ## License
 
-MIT
+[MIT](LICENSE)

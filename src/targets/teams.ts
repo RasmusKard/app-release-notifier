@@ -10,6 +10,7 @@ import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, post
 export interface TeamsTarget {
   /** The id routes refer to it by. */
   id: string;
+  /** Makes this a Teams target. */
   type: 'teams';
   /**
    * The webhook URL of a Teams Workflows flow made from the "Send webhook alerts to a channel" template. URLs on the

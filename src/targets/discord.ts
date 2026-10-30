@@ -5,6 +5,7 @@ import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, optS
 export interface DiscordTarget {
   /** The id routes refer to it by. */
   id: string;
+  /** Makes this a Discord target. */
   type: 'discord';
   /** The webhook URL, from the channel's Integrations › Webhooks. */
   url: string;
