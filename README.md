@@ -8,18 +8,19 @@ Routes in `config.yaml` pick which events go where:
 routes:
   - types: ["build.failed", "submit.failed", "appreview.rejected"]
     targets: [releases, teams]
-    mention: true # pings the target's configured mention
+    mention: true
   - types: ["*"]
     targets: [dev-discord]
     silent: true
 ```
 
-[`config.example.yaml`](config.example.yaml) lists every event type and option.
+The [config reference](https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html) lists every option and event type. [`config.example.yaml`](config.example.yaml) is a starting point.
 
 When a target is down:
 
-- If no other target got the event, the sender is asked to resend it (HTTP 503). The Google Play poller retries on its next poll.
-- If another target got it, it isn't resent, so nothing is posted twice. The failure is logged at `error` level.
+- If no target got the event, the server replies 503. EAS resends it a few times, an `/ingest` caller should resend it, and App Store Connect needs a resend by hand (see [Limits](#limits)). The Google Play poller retries on its next poll.
+- If another target got it, the sender isn't asked to resend. The failure is logged at `error` level.
+- A message can occasionally be posted twice: a post that timed out is retried even if it landed, and a resent event repeats its messages that did get through.
 
 ## Install
 
@@ -33,22 +34,27 @@ _Node 24 or later. Runs the TypeScript directly, with no build step._
 
 ## Usage
 
-1. Copy the config and fill in your apps, targets and routes:
+1. Copy the config and fill in your apps, targets and routes. Remove the sources you don't use: every `${VAR}` must be set and every key file must exist.
 
    ```sh
    cp config.example.yaml config.yaml
    ```
 
-2. Start the server:
+2. Put the variables `config.yaml` references in `.env`, then start the server:
 
    ```sh
    node --env-file=.env src/main.ts config.yaml
    ```
 
-   Or with Docker: `docker build -t storeherald .`, then mount the folder holding `config.yaml` and its key files at `/config`.
+   Or with Docker, mounting the folder that holds `config.yaml` and its key files at `/config`:
+
+   ```sh
+   docker build -t storeherald .
+   docker run --env-file .env -p 8080:8080 -v "$PWD:/config:ro" storeherald
+   ```
 
 3. [Connect the sources](#sources).
-4. Alert on `error`-level log lines (failed deliveries) and point your uptime check at `GET /health_check`.
+4. Logs are JSON lines on stdout. Alert on those with `"level":"error"` and point your uptime check at `GET /health_check`.
 
 ## Sources
 
@@ -69,11 +75,11 @@ eas webhook:create --event SUBMIT --url https://your.host/eas/myapp --secret "$E
 - Secret: the one in `config.yaml`.
 - Events: *App Store version state changes* and *Build upload state changes*.
 
-Add `ascApi` to the config to get version numbers in messages.
+Add [`ascApi`](https://rasmuskard.github.io/storeherald/interfaces/ConfigAscApi.html) to the config to get version numbers in messages.
 
 ### Google Play
 
-Play has no release webhooks, so the server polls it every `intervalMinutes`. The first poll only records the current state. Messages start with the next change.
+The server polls Play every [`playApi.intervalMinutes`](https://rasmuskard.github.io/storeherald/interfaces/ConfigPlayApi.html). The first poll only records the current state. Messages start with the next change.
 
 - In a Google Cloud project, enable the *Google Play Android Developer API*.
 - Create a service account in that project and download its JSON key.
@@ -85,7 +91,7 @@ Play has no release webhooks, so the server polls it every `intervalMinutes`. Th
 
 - Set `ingest.secret` in the config. Generate one with `node -e 'console.log("whsec_"+require("crypto").randomBytes(32).toString("base64"))'`.
 - Sign each request with [Standard Webhooks](https://www.standardwebhooks.com/). Its libraries do this, or see the example below.
-- The JSON body needs `type` (like `update.published`) and `title`. Optional: `severity`, `body`, `actor`, `source`, `time`, `fields`, `links`, and `labels` such as `{ "app": "myapp" }` for routes to match on.
+- The JSON body is an [`IngestEvent`](https://rasmuskard.github.io/storeherald/interfaces/IngestEvent.html).
 - Resend on a 503.
 
 <details>
@@ -110,15 +116,11 @@ if (!res.ok) throw new Error(`ingest: ${res.status} ${await res.text()}`);
 
 ## Targets
 
-| Type | URL from | Notes |
-| --- | --- | --- |
-| `slack` | Slack app › Incoming Webhooks | The bot name and icon come from the Slack app. |
-| `discord` | Channel › Integrations › Webhooks | `silent` routes suppress push notifications. `threadId` posts into a thread or forum post. |
-| `teams` | Teams Workflows › "Send webhook alerts to a channel" | Teams accepts posts before delivering them, so failures only show in the flow's run history. Limit is roughly 25 posts per 5 minutes. |
+[`slack`](https://rasmuskard.github.io/storeherald/interfaces/SlackTarget.html), [`discord`](https://rasmuskard.github.io/storeherald/interfaces/DiscordTarget.html) and [`teams`](https://rasmuskard.github.io/storeherald/interfaces/TeamsTarget.html), each with its options and where its webhook URL comes from.
 
 ## State
 
-The Google Play poller remembers which release states it has seen. By default it keeps them in memory. To keep them across restarts, point `stateStore` in the config at a module that exports `get(key)` and `set(key, value)`, both with string values. `get` returns `undefined` when nothing is stored and throws on errors, which skips that poll.
+To keep Google Play's seen release states across restarts, point [`stateStore`](https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html#statestore) in the config at a module like this one.
 
 <details>
 <summary>A file on disk</summary>

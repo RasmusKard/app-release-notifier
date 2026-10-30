@@ -1,0 +1,19 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["../src/api.ts"],
+  "out": "../docs",
+  "plugin": ["tsdoc-defaults/typedoc", "../.github/scripts/typedoc-plugin.mts"],
+  "customCss": "typedoc.css",
+  "readme": "../README.md",
+  "headings": { "readme": false },
+  "disableSources": true,
+  "excludeExternals": true,
+  "treatWarningsAsErrors": true,
+  "validation": { "notExported": false },
+  "useFirstParagraphOfCommentAsSummary": true,
+  "searchInComments": true,
+  "includeHierarchySummary": false,
+  "sort": ["source-order"],
+  "navigationLinks": { "GitHub": "https://github.com/RasmusKard/storeherald" },
+  "highlightLanguages": ["bash", "javascript", "json", "sh", "typescript", "yaml"]
+}
