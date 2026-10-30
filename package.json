@@ -7,14 +7,19 @@
   "engines": { "node": ">=24" },
   "scripts": {
     "test": "node --test 'test/*.test.ts'",
-    "check": "tsc",
-    "start": "node src/main.ts"
+    "check": "tsc && npm run gen:defaults -- --check && npm run docs:check",
+    "start": "node src/main.ts",
+    "gen:defaults": "tsdoc-defaults",
+    "docs": "typedoc",
+    "docs:check": "typedoc --out build/docs && (git diff --no-index --exit-code build/docs docs || (echo 'docs is stale: run npm run docs' && exit 1))"
   },
   "dependencies": {
     "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",
-    "typescript": "^7.0.2"
+    "tsdoc-defaults": "^0.1.0",
+    "typedoc": "^0.28.20",
+    "typescript": "~6.0.3"
   }
 }

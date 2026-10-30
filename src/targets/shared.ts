@@ -16,6 +16,9 @@ export interface Target<C> {
   send(payload: unknown, cfg: C): Promise<void>;
 }
 
+/** T's keys, from a literal that must name each of them once: a parser's key list can't drift from the documented type. */
+export const keysOf = <T>(keys: Record<keyof T, true>) => Object.keys(keys);
+
 export const SEVERITY: Record<Severity, { emoji: string; color: number }> = {
   info: { emoji: 'ℹ️', color: 0x3aa3e3 },
   success: { emoji: '✅', color: 0x3aa337 },

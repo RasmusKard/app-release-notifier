@@ -1,9 +1,20 @@
-import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, linksOf, optStr, postJson, truncate } from './shared.ts';
+import type { ConfigFile } from '../config.ts';
+import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, optStr, postJson, truncate } from './shared.ts';
 
-interface DiscordConfig {
+/** A target in {@link ConfigFile.targets} that posts to a Discord webhook. Its name and avatar are set on the webhook in Discord. */
+export interface DiscordTarget {
+  /** The id routes refer to it by. */
+  id: string;
+  type: 'discord';
+  /** The webhook URL, from the channel's Integrations › Webhooks. */
   url: string;
-  mention?: string; // '<@&roleId>' | '<@userId>' | '@here'
+  /** What routes with `mention` ping, such as `<@&roleId>`, `<@userId>` or `@here`. */
+  mention?: string;
+  /** Posts into this thread or forum post. */
+  threadId?: string;
 }
+
+type DiscordConfig = Pick<DiscordTarget, 'url' | 'mention'>; // threadId goes into the url
 
 // Escape markdown only in slots that render it (title, description, field values). Footer and author are plain text.
 // Bare URLs are left alone (escaping _ inside them breaks the link). Escaping [ ] is enough to break [text](url).
@@ -18,7 +29,7 @@ const esc = (s: string) =>
 const clip = (s: string, max: number) => truncate(esc(s), max);
 
 export const discord: Target<DiscordConfig> = {
-  keys: ['url', 'mention', 'threadId'],
+  keys: keysOf<Omit<DiscordTarget, 'id' | 'type'>>({ url: true, mention: true, threadId: true }),
   parseConfig(raw) {
     // URLs from the Discord UI carry no version, so they hit deprecated v6.
     // wait=true makes failures visible and returns the message id. with_components enables link buttons.
@@ -26,7 +37,7 @@ export const discord: Target<DiscordConfig> = {
     url.pathname = url.pathname.replace(/\/api\/(v\d+\/)?webhooks\//, '/api/v10/webhooks/');
     url.searchParams.set('wait', 'true');
     url.searchParams.set('with_components', 'true');
-    const threadId = optStr(raw, 'threadId'); // post into a thread or an existing forum post
+    const threadId = optStr(raw, 'threadId');
     if (threadId) url.searchParams.set('thread_id', threadId);
     return { url: url.toString(), mention: optStr(raw, 'mention') };
   },

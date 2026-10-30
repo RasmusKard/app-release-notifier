@@ -1,0 +1,144 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>storeherald</title><meta name="description" content="Documentation for storeherald"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><link rel="stylesheet" href="assets/custom.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">storeherald</a>
+<div id="tsd-toolbar-links"><a href="https://github.com/RasmusKard/storeherald">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title"></div>
+<div class="tsd-panel tsd-typography"><h1 id="storeherald" class="tsd-anchor-link">storeherald<a href="#storeherald" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><strong>A server that posts an Expo app's builds, store reviews and releases to Slack, Discord and Microsoft Teams.</strong></p>
+<p>Routes in <code>config.yaml</code> pick which events go where:</p>
+<pre><code class="yaml"><span class="hl-0">routes</span><span class="hl-1">:</span><br/><span class="hl-1">  - </span><span class="hl-0">types</span><span class="hl-1">: [</span><span class="hl-2">&quot;build.failed&quot;</span><span class="hl-1">, </span><span class="hl-2">&quot;submit.failed&quot;</span><span class="hl-1">, </span><span class="hl-2">&quot;appreview.rejected&quot;</span><span class="hl-1">]</span><br/><span class="hl-1">    </span><span class="hl-0">targets</span><span class="hl-1">: [</span><span class="hl-3">releases</span><span class="hl-1">, </span><span class="hl-3">teams</span><span class="hl-1">]</span><br/><span class="hl-1">    </span><span class="hl-0">mention</span><span class="hl-1">: </span><span class="hl-4">true</span><br/><span class="hl-1">  - </span><span class="hl-0">types</span><span class="hl-1">: [</span><span class="hl-2">&quot;*&quot;</span><span class="hl-1">]</span><br/><span class="hl-1">    </span><span class="hl-0">targets</span><span class="hl-1">: [</span><span class="hl-3">dev-discord</span><span class="hl-1">]</span><br/><span class="hl-1">    </span><span class="hl-0">silent</span><span class="hl-1">: </span><span class="hl-4">true</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The <a href="https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html">config reference</a> lists every option and event type. <a href="media/config.example.yaml"><code>config.example.yaml</code></a> is a starting point.</p>
+<p>When a target is down:</p>
+<ul>
+<li>If no target got the event, the server replies 503. EAS resends it a few times, an <code>/ingest</code> caller should resend it, and App Store Connect needs a resend by hand (see <a href="#limits">Limits</a>). The Google Play poller retries on its next poll.</li>
+<li>If another target got it, the sender isn't asked to resend. The failure is logged at <code>error</code> level.</li>
+<li>A message can occasionally be posted twice: a post that timed out is retried even if it landed, and a resent event repeats its messages that did get through.</li>
+</ul>
+<h2 id="install" class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="sh"><span class="hl-5">git</span><span class="hl-1"> </span><span class="hl-2">clone</span><span class="hl-1"> </span><span class="hl-2">https://github.com/RasmusKard/storeherald.git</span><br/><span class="hl-5">cd</span><span class="hl-1"> </span><span class="hl-2">storeherald</span><br/><span class="hl-5">npm</span><span class="hl-1"> </span><span class="hl-2">ci</span>
+</code><button type="button">Copy</button></pre>
+
+<p><em>Node 24 or later. Runs the TypeScript directly, with no build step.</em></p>
+<h2 id="usage" class="tsd-anchor-link">Usage<a href="#usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ol>
+<li>
+<p>Copy the config and fill in your apps, targets and routes. Remove the sources you don't use: every <code>${VAR}</code> must be set and every key file must exist.</p>
+<pre><code class="sh"><span class="hl-5">cp</span><span class="hl-1"> </span><span class="hl-2">config.example.yaml</span><span class="hl-1"> </span><span class="hl-2">config.yaml</span>
+</code><button type="button">Copy</button></pre>
+
+<p>On a host that can't mount a file, put the YAML in the <code>STOREHERALD_CONFIG</code> environment variable instead.</p>
+</li>
+<li>
+<p>Put the variables <code>config.yaml</code> references in <code>.env</code>, then start the server:</p>
+<pre><code class="sh"><span class="hl-5">node</span><span class="hl-1"> </span><span class="hl-4">--env-file=.env</span><span class="hl-1"> </span><span class="hl-2">src/main.ts</span><span class="hl-1"> </span><span class="hl-2">config.yaml</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Or with Docker, mounting the folder that holds <code>config.yaml</code> and its key files at <code>/config</code>:</p>
+<pre><code class="sh"><span class="hl-5">docker</span><span class="hl-1"> </span><span class="hl-2">build</span><span class="hl-1"> </span><span class="hl-4">-t</span><span class="hl-1"> </span><span class="hl-2">storeherald</span><span class="hl-1"> </span><span class="hl-2">.</span><br/><span class="hl-5">docker</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-4">--env-file</span><span class="hl-1"> </span><span class="hl-2">.env</span><span class="hl-1"> </span><span class="hl-4">-p</span><span class="hl-1"> </span><span class="hl-2">8080:8080</span><span class="hl-1"> </span><span class="hl-4">-v</span><span class="hl-1"> </span><span class="hl-2">&quot;</span><span class="hl-6">$PWD</span><span class="hl-2">:/config:ro&quot;</span><span class="hl-1"> </span><span class="hl-2">storeherald</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p><a href="#sources">Connect the sources</a>.</p>
+</li>
+<li>
+<p>Logs are JSON lines on stdout. Alert on those with <code>&quot;level&quot;:&quot;error&quot;</code> and point your uptime check at <code>GET /health_check</code>.</p>
+</li>
+</ol>
+<h2 id="sources" class="tsd-anchor-link">Sources<a href="#sources" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="eas-builds-and-submissions" class="tsd-anchor-link">EAS builds and submissions<a href="#eas-builds-and-submissions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>/eas/&lt;app&gt;</code>:</p>
+<pre><code class="sh"><span class="hl-5">eas</span><span class="hl-1"> </span><span class="hl-2">webhook:create</span><span class="hl-1"> </span><span class="hl-4">--event</span><span class="hl-1"> </span><span class="hl-2">BUILD</span><span class="hl-1"> </span><span class="hl-4">--url</span><span class="hl-1"> </span><span class="hl-2">https://your.host/eas/myapp</span><span class="hl-1"> </span><span class="hl-4">--secret</span><span class="hl-1"> </span><span class="hl-2">&quot;</span><span class="hl-6">$EAS_WEBHOOK_SECRET</span><span class="hl-2">&quot;</span><br/><span class="hl-5">eas</span><span class="hl-1"> </span><span class="hl-2">webhook:create</span><span class="hl-1"> </span><span class="hl-4">--event</span><span class="hl-1"> </span><span class="hl-2">SUBMIT</span><span class="hl-1"> </span><span class="hl-4">--url</span><span class="hl-1"> </span><span class="hl-2">https://your.host/eas/myapp</span><span class="hl-1"> </span><span class="hl-4">--secret</span><span class="hl-1"> </span><span class="hl-2">&quot;</span><span class="hl-6">$EAS_WEBHOOK_SECRET</span><span class="hl-2">&quot;</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="app-store-connect" class="tsd-anchor-link">App Store Connect<a href="#app-store-connect" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>/asc/&lt;app&gt;</code>: in App Store Connect › Users and Access › Integrations › Webhooks, create one webhook per app.</p>
+<ul>
+<li>URL: <code>https://your.host/asc/myapp</code>.</li>
+<li>Secret: the one in <code>config.yaml</code>.</li>
+<li>Events: <em>App Store version state changes</em> and <em>Build upload state changes</em>.</li>
+</ul>
+<p>Add <a href="https://rasmuskard.github.io/storeherald/interfaces/ConfigAscApi.html"><code>ascApi</code></a> to the config to get version numbers in messages.</p>
+<h3 id="google-play" class="tsd-anchor-link">Google Play<a href="#google-play" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The server polls Play every <a href="https://rasmuskard.github.io/storeherald/interfaces/ConfigPlayApi.html"><code>playApi.intervalMinutes</code></a>. The first poll only records the current state. Messages start with the next change.</p>
+<ul>
+<li>In a Google Cloud project, enable the <em>Google Play Android Developer API</em>.</li>
+<li>Create a service account in that project and download its JSON key.</li>
+<li>Invite it in Play Console › Users and permissions with read-only access to the app.</li>
+</ul>
+<h3 id="custom-events" class="tsd-anchor-link">Custom events<a href="#custom-events" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>/ingest</code> takes events from any CI job or script, for example after publishing an OTA update (EAS has no webhook for those).</p>
+<ul>
+<li>Set <code>ingest.secret</code> in the config. Generate one with <code>node -e 'console.log(&quot;whsec_&quot;+require(&quot;crypto&quot;).randomBytes(32).toString(&quot;base64&quot;))'</code>.</li>
+<li>Sign each request with <a href="https://www.standardwebhooks.com/">Standard Webhooks</a>. Its libraries do this, or see the example below.</li>
+<li>The JSON body is an <a href="https://rasmuskard.github.io/storeherald/interfaces/IngestEvent.html"><code>IngestEvent</code></a>.</li>
+<li>Resend on a 503.</li>
+</ul>
+<details>
+<summary>Posting an event from Node</summary>
+<pre><code class="js"><span class="hl-7">// post-event.mjs: node post-event.mjs &#39;{&quot;type&quot;:&quot;update.published&quot;,&quot;title&quot;:&quot;OTA update published&quot;}&#39;</span><br/><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-6">createHmac</span><span class="hl-1">, </span><span class="hl-6">randomUUID</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-2">&#39;node:crypto&#39;</span><span class="hl-1">;</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-9">body</span><span class="hl-1"> = </span><span class="hl-6">process</span><span class="hl-1">.</span><span class="hl-6">argv</span><span class="hl-1">[</span><span class="hl-10">2</span><span class="hl-1">];</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-9">id</span><span class="hl-1"> = </span><span class="hl-2">`msg_</span><span class="hl-4">${</span><span class="hl-5">randomUUID</span><span class="hl-11">()</span><span class="hl-4">}</span><span class="hl-2">`</span><span class="hl-1">, </span><span class="hl-9">ts</span><span class="hl-1"> = </span><span class="hl-5">String</span><span class="hl-1">(</span><span class="hl-6">Math</span><span class="hl-1">.</span><span class="hl-5">floor</span><span class="hl-1">(</span><span class="hl-6">Date</span><span class="hl-1">.</span><span class="hl-5">now</span><span class="hl-1">() / </span><span class="hl-10">1000</span><span class="hl-1">));</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-9">key</span><span class="hl-1"> = </span><span class="hl-6">Buffer</span><span class="hl-1">.</span><span class="hl-5">from</span><span class="hl-1">(</span><span class="hl-6">process</span><span class="hl-1">.</span><span class="hl-6">env</span><span class="hl-1">.</span><span class="hl-9">INGEST_SECRET</span><span class="hl-1">.</span><span class="hl-5">replace</span><span class="hl-1">(</span><span class="hl-12">/</span><span class="hl-13">^</span><span class="hl-12">whsec_/</span><span class="hl-1">, </span><span class="hl-2">&#39;&#39;</span><span class="hl-1">), </span><span class="hl-2">&#39;base64&#39;</span><span class="hl-1">);</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-9">sig</span><span class="hl-1"> = </span><span class="hl-5">createHmac</span><span class="hl-1">(</span><span class="hl-2">&#39;sha256&#39;</span><span class="hl-1">, </span><span class="hl-6">key</span><span class="hl-1">).</span><span class="hl-5">update</span><span class="hl-1">(</span><span class="hl-2">`</span><span class="hl-4">${</span><span class="hl-6">id</span><span class="hl-4">}</span><span class="hl-2">.</span><span class="hl-4">${</span><span class="hl-6">ts</span><span class="hl-4">}</span><span class="hl-2">.</span><span class="hl-4">${</span><span class="hl-6">body</span><span class="hl-4">}</span><span class="hl-2">`</span><span class="hl-1">).</span><span class="hl-5">digest</span><span class="hl-1">(</span><span class="hl-2">&#39;base64&#39;</span><span class="hl-1">);</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-9">res</span><span class="hl-1"> = </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-5">fetch</span><span class="hl-1">(</span><span class="hl-6">process</span><span class="hl-1">.</span><span class="hl-6">env</span><span class="hl-1">.</span><span class="hl-9">INGEST_URL</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-6">method:</span><span class="hl-1"> </span><span class="hl-2">&#39;POST&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-6">body</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-6">headers:</span><span class="hl-1"> { </span><span class="hl-2">&#39;content-type&#39;</span><span class="hl-6">:</span><span class="hl-1"> </span><span class="hl-2">&#39;application/json&#39;</span><span class="hl-1">, </span><span class="hl-2">&#39;webhook-id&#39;</span><span class="hl-6">:</span><span class="hl-1"> </span><span class="hl-6">id</span><span class="hl-1">, </span><span class="hl-2">&#39;webhook-timestamp&#39;</span><span class="hl-6">:</span><span class="hl-1"> </span><span class="hl-6">ts</span><span class="hl-1">, </span><span class="hl-2">&#39;webhook-signature&#39;</span><span class="hl-6">:</span><span class="hl-1"> </span><span class="hl-2">`v1,</span><span class="hl-4">${</span><span class="hl-6">sig</span><span class="hl-4">}</span><span class="hl-2">`</span><span class="hl-1"> },</span><br/><span class="hl-1">});</span><br/><span class="hl-8">if</span><span class="hl-1"> (!</span><span class="hl-6">res</span><span class="hl-1">.</span><span class="hl-6">ok</span><span class="hl-1">) </span><span class="hl-8">throw</span><span class="hl-1"> </span><span class="hl-4">new</span><span class="hl-1"> </span><span class="hl-5">Error</span><span class="hl-1">(</span><span class="hl-2">`ingest: </span><span class="hl-4">${</span><span class="hl-6">res</span><span class="hl-11">.</span><span class="hl-6">status</span><span class="hl-4">}</span><span class="hl-2"> </span><span class="hl-4">${</span><span class="hl-8">await</span><span class="hl-11"> </span><span class="hl-6">res</span><span class="hl-11">.</span><span class="hl-5">text</span><span class="hl-11">()</span><span class="hl-4">}</span><span class="hl-2">`</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<h2 id="targets" class="tsd-anchor-link">Targets<a href="#targets" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><a href="https://rasmuskard.github.io/storeherald/interfaces/SlackTarget.html"><code>slack</code></a>, <a href="https://rasmuskard.github.io/storeherald/interfaces/DiscordTarget.html"><code>discord</code></a> and <a href="https://rasmuskard.github.io/storeherald/interfaces/TeamsTarget.html"><code>teams</code></a>, each with its options and where its webhook URL comes from.</p>
+<h2 id="state" class="tsd-anchor-link">State<a href="#state" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>To keep Google Play's seen release states across restarts, point <a href="https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html#statestore"><code>stateStore</code></a> in the config at a module like this one.</p>
+<details>
+<summary>A file on disk</summary>
+<pre><code class="js"><span class="hl-7">// state-store.mjs: a file on disk. In Docker, set STATE_DIR to a mounted volume (the app folder isn&#39;t writable).</span><br/><span class="hl-8">import</span><span class="hl-1"> { </span><span class="hl-6">readFile</span><span class="hl-1">, </span><span class="hl-6">rename</span><span class="hl-1">, </span><span class="hl-6">writeFile</span><span class="hl-1"> } </span><span class="hl-8">from</span><span class="hl-1"> </span><span class="hl-2">&#39;node:fs/promises&#39;</span><span class="hl-1">;</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">file</span><span class="hl-1"> = (</span><span class="hl-6">key</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-2">`</span><span class="hl-4">${</span><span class="hl-6">process</span><span class="hl-11">.</span><span class="hl-6">env</span><span class="hl-11">.</span><span class="hl-9">STATE_DIR</span><span class="hl-11"> </span><span class="hl-1">??</span><span class="hl-11"> </span><span class="hl-2">&#39;.&#39;</span><span class="hl-4">}</span><span class="hl-2">/</span><span class="hl-4">${</span><span class="hl-6">key</span><span class="hl-4">}</span><span class="hl-2">.json`</span><span class="hl-1">;</span><br/><span class="hl-8">export</span><span class="hl-1"> </span><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">get</span><span class="hl-1"> = (</span><span class="hl-6">key</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-5">readFile</span><span class="hl-1">(</span><span class="hl-5">file</span><span class="hl-1">(</span><span class="hl-6">key</span><span class="hl-1">), </span><span class="hl-2">&#39;utf8&#39;</span><span class="hl-1">).</span><span class="hl-5">catch</span><span class="hl-1">((</span><span class="hl-6">e</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> (</span><span class="hl-6">e</span><span class="hl-1">.</span><span class="hl-6">code</span><span class="hl-1"> === </span><span class="hl-2">&#39;ENOENT&#39;</span><span class="hl-1"> ? </span><span class="hl-4">undefined</span><span class="hl-1"> : </span><span class="hl-14">Promise</span><span class="hl-1">.</span><span class="hl-5">reject</span><span class="hl-1">(</span><span class="hl-6">e</span><span class="hl-1">)));</span><br/><span class="hl-8">export</span><span class="hl-1"> </span><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">set</span><span class="hl-1"> = </span><span class="hl-4">async</span><span class="hl-1"> (</span><span class="hl-6">key</span><span class="hl-1">, </span><span class="hl-6">value</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-5">writeFile</span><span class="hl-1">(</span><span class="hl-2">`</span><span class="hl-4">${</span><span class="hl-5">file</span><span class="hl-11">(</span><span class="hl-6">key</span><span class="hl-11">)</span><span class="hl-4">}</span><span class="hl-2">.tmp`</span><span class="hl-1">, </span><span class="hl-6">value</span><span class="hl-1">);</span><br/><span class="hl-1">  </span><span class="hl-8">await</span><span class="hl-1"> </span><span class="hl-5">rename</span><span class="hl-1">(</span><span class="hl-2">`</span><span class="hl-4">${</span><span class="hl-5">file</span><span class="hl-11">(</span><span class="hl-6">key</span><span class="hl-11">)</span><span class="hl-4">}</span><span class="hl-2">.tmp`</span><span class="hl-1">, </span><span class="hl-5">file</span><span class="hl-1">(</span><span class="hl-6">key</span><span class="hl-1">)); </span><span class="hl-7">// atomic: a crash mid-write can&#39;t leave a half-written file</span><br/><span class="hl-1">};</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<p>To use Redis, a database or another remote store instead, export the same <code>get</code> and <code>set</code> backed by it.</p>
+<h2 id="limits" class="tsd-anchor-link">Limits<a href="#limits" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Google Play changes made while the server is down are missed unless you configure a <a href="#state">state store</a>.</li>
+<li>If you use Google Play, run a single instance. Each instance polls, so two would post every change twice.</li>
+<li>Google Play rejection reasons aren't in its API. They arrive by email.</li>
+<li>If every target was down when an App Store Connect event arrived, resend it by hand from the webhook's delivery list in App Store Connect.</li>
+</ul>
+<h2 id="license" class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>MIT</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#storeherald"><span>storeherald</span></a>
+<ul>
+<li><a href="#install"><span>Install</span></a></li>
+<li><a href="#usage"><span>Usage</span></a></li>
+<li><a href="#sources"><span>Sources</span></a></li>
+<li>
+<ul>
+<li><a href="#eas-builds-and-submissions"><span>EAS builds and submissions</span></a></li>
+<li><a href="#app-store-connect"><span>App <wbr/>Store <wbr/>Connect</span></a></li>
+<li><a href="#google-play"><span>Google <wbr/>Play</span></a></li>
+<li><a href="#custom-events"><span>Custom events</span></a></li></ul></li>
+<li><a href="#targets"><span>Targets</span></a></li>
+<li><a href="#state"><span>State</span></a></li>
+<li><a href="#limits"><span>Limits</span></a></li>
+<li><a href="#license"><span>License</span></a></li></ul></div></details></div>
+<div class="site-menu">
+<nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://github.com/RasmusKard/storeherald" class="tsd-nav-link">GitHub</a></nav>
+<nav class="tsd-navigation"><a href="modules.html">storeherald</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

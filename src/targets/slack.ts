@@ -1,9 +1,18 @@
-import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, linksOf, optStr, postJson, truncate } from './shared.ts';
+import type { ConfigFile } from '../config.ts';
+import { SEVERITY, type Target, bodyOf, fieldsOf, httpUrl, keysOf, linksOf, optStr, postJson, truncate } from './shared.ts';
 
-interface SlackConfig {
+/** A target in {@link ConfigFile.targets} that posts to a Slack incoming webhook. The bot's name and icon come from the Slack app. */
+export interface SlackTarget {
+  /** The id routes refer to it by. */
+  id: string;
+  type: 'slack';
+  /** The webhook URL, from the Slack app's Incoming Webhooks page. */
   url: string;
-  mention?: string; // '<!subteam^S0123>' | '<!here>' | '<@U0123>'
+  /** What routes with `mention` ping, such as `<!subteam^S0123ABC>`, `<!here>` or `<@U0123>`. */
+  mention?: string;
 }
+
+type SlackConfig = Pick<SlackTarget, 'url' | 'mention'>;
 
 // mrkdwn has no escape for * _ ~. Only &<> matter: escaping them blocks injected <!channel> and <url|fake> links.
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -12,7 +21,7 @@ const safeUrl = (u: string) => u.replace(/[|<>]/g, encodeURIComponent); // these
 const mrkdwn = (text: string) => ({ type: 'mrkdwn', text, verbatim: true }); // verbatim: no auto-linking of @here, #channel, urls
 
 export const slack: Target<SlackConfig> = {
-  keys: ['url', 'mention'],
+  keys: keysOf<Omit<SlackTarget, 'id' | 'type'>>({ url: true, mention: true }),
   parseConfig: (raw) => ({ url: httpUrl(raw, 'url').href, mention: optStr(raw, 'mention') }),
 
   render(m, cfg, d) {

@@ -1,0 +1,52 @@
+# Copy to config.yaml. Every key is documented at https://rasmuskard.github.io/storeherald/interfaces/ConfigFile.html
+port: 8080
+# stateStore: ./state-store.mjs
+
+apps:
+  myapp:
+    name: My App
+    eas:
+      secret: "${EAS_WEBHOOK_SECRET}"
+    asc:
+      secret: "${ASC_WEBHOOK_SECRET}"
+    play:
+      packageName: com.acme.myapp
+      tracks: [internal, production]
+
+ascApi:
+  issuerId: "${ASC_ISSUER_ID}"
+  keyId: "${ASC_KEY_ID}"
+  privateKey: ./secrets/AuthKey.p8
+
+playApi:
+  serviceAccount: ./secrets/play-service-account.json
+  intervalMinutes: 15
+
+ingest:
+  secret: "${INGEST_SECRET}"
+
+targets:
+  - id: releases
+    type: slack
+    url: "${SLACK_RELEASES_WEBHOOK}"
+    mention: "<!subteam^S0123ABC>"
+  - id: dev-discord
+    type: discord
+    url: "${DISCORD_WEBHOOK}"
+  - id: teams
+    type: teams
+    url: "${TEAMS_WORKFLOW_URL}"
+    mention: { id: "alex@acme.com", name: "Alex" }
+
+routes:
+  - types: ["build.failed", "submit.failed", "build.processing_failed", "appreview.rejected"]
+    targets: [releases, teams]
+    mention: true
+  - types: ["appreview.*", "release.live", "testing.build.available", "update.published"]
+    targets: [releases, teams]
+  - types: ["build.succeeded"]
+    labels: { profile: production }
+    targets: [releases]
+  - types: ["*"]
+    targets: [dev-discord]
+    silent: true
